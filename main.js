@@ -55,11 +55,14 @@ var mainState = {
 		this.timer = this.game.time.events.loop(1500, this.addRowOfPipes, this);
 		
 		// Add a score label on the top left of the screen
-        this.score = 0;
+        this.score = -1;
         this.labelScore = this.game.add.text(20, 20, "0", { font: "30px Arial", fill: "#ffffff" });  
     
     	// Add jump sounf in Game 
     	this.jumpSound = game.add.audio('jump');
+    	
+    	// Seeting Anchor
+    	this.bird.anchor.setTo(-0.2, 0.5);
 
 	},
 
@@ -72,15 +75,36 @@ var mainState = {
 			this.restartGame();
 	
 		// If the bird overlap any pipes, call 'restartGame'
-        game.physics.arcade.overlap(this.bird, this.pipes, this.restartGame, null, this);      
-    
+        game.physics.arcade.overlap(this.bird, this.pipes, this.hitPipe, null, this);
+        
+        // Always slowly rotate the bird downward, up to a certain point
+        // When the bird jumps, rotate it upward.
+        if (this.bird.angle < 20)  
+    	this.bird.angle += 1;      
+        
+        
 	},
 	// Make the bird jump
 	jump : function() {
+		
+		// Don't jump if the bird is dead.
+		if (this.bird.alive == false)  
+    	return; 
 		// Add a vertical velocity to the bird
 		this.bird.body.velocity.y = -350;
 		//Play Jump sound 
 		this.jumpSound.play();
+		
+		// Create an animation on the bird
+		var animation = game.add.tween(this.bird);
+
+		// Set the animation to change the angle of the sprite to -20° in 100 milliseconds
+		animation.to({angle: -20}, 100);
+		
+		// And start the animation
+		animation.start();
+		
+		game.add.tween(this.bird).to({angle: -20}, 100).start();
 	},
 
 	// Restart the game
@@ -115,6 +139,23 @@ var mainState = {
 	
 		this.score += 1;
         this.labelScore.text = this.score;
+	},
+	// Add hit pipe function as dead animation
+	hitPipe: function() {  
+    // If the bird has already hit a pipe, we have nothing to do
+    if (this.bird.alive == false)
+        return;
+
+    // Set the alive property of the bird to false
+    this.bird.alive = false;
+
+    // Prevent new pipes from appearing
+    game.time.events.remove(this.timer);
+
+    // Go through all the pipes, and stop their movement
+	    this.pipes.forEachAlive(function(p){
+	        p.body.velocity.x = 0;
+	    }, this);
 	},
 };
 
